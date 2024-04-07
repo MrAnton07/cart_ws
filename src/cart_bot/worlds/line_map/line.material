@@ -1,0 +1,13 @@
+material LineMaterial
+{
+    technique
+    {
+        pass
+        {
+            texture_unit
+            {
+                texture line_map_f.png
+            }
+        }
+    }
+}
