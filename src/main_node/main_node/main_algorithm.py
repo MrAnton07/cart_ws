@@ -66,25 +66,6 @@ class StateMachine(Node):
         message.data = ','.join([color, self.color_under_bot[0]])
         self.mask_key_publisher.publish(message)
 
-    # def reverse(self):              ##################################Старая реализация has_red_callback, переписать под разворот
-    #     message = Twist()
-    #     if msg.data == True and self.flag == False:
-    #         self.has_red = True
-    #         message.linear.x = 0.0
-    #         message.angular.z = 0.0
-    #         self.publisher.publish(message)
-    #         eventlet.sleep(3)
-    #         ###################
-    #         for i in range(20):
-    #             message.angular.z = 0.7
-    #             self.publisher.publish(message) 
-    #             eventlet.sleep(0.05)
-    #         self.flag = True
-    #         self.has_black_line = False
-    #     else:
-    #         self.has_red = False
-    #     print(self.has_red)
-
     def has_pink_callback(self, msg): #Если мы наткнулись на пурпурный - в зависимости от команды - включить соответствующую маску, 
         message = Twist()
         if msg.data == True and self.flag == False:
