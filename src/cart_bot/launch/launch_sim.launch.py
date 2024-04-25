@@ -58,6 +58,11 @@ def generate_launch_description():
         name='state_machine'
     )
 
+    line_detection = Node(
+        package='line_detector_package',
+        executable='line_detector_node'
+    )
+
 
     return LaunchDescription([
         rsp,
@@ -66,4 +71,5 @@ def generate_launch_description():
         diff_drive_spawner,
         joint_broad_spawner,
         main_alg,
+        line_detection,
     ])
