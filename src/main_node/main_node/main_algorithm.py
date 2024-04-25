@@ -41,6 +41,9 @@ class StateMachine(Node):
             'color_under_bot_topic',
             self.get_color,
             10)
+        
+        self.last_time = self.get_clock().now()
+        self.I = 0.0
         self.counter = 0
         self.has_black_line = False
         self.task = "N"
@@ -110,16 +113,26 @@ class StateMachine(Node):
             self.counter+=1
         #Если линия слишком далеко от центра камеры - приблизиться к линии
         else:
+            how_straight = (320-msg.data[0])
+            current_time = self.get_clock().now()
+            dt = current_time - self.last_time
+            if dt.nanoseconds > 1e8:
+                self.last_time = current_time
+                self.I = (self.I + (how_straight)*dt.nanoseconds/1e9)
+                
             self.counter = 0
+            kP = 0.005
+            kI = 0.0003
+            P = how_straight
+            dev = abs(P*0.1)
+            I = self.I
+
             theta = msg.data[-1]
             print(theta)
             if(self.has_pink != True):
-                message.linear.x = -0.10
-                if (0 < theta < 40):
-                    message.linear.x = -0.01
-                if (0 > theta > -40):
-                    message.linear.x = -0.01
-                message.angular.z = (320 - msg.data[0])*0.003
+                x_speed = -((1/dev if (dev > 1.0) else 1.0)*0.2+0.03)
+                message.linear.x = x_speed if (abs(x_speed) < 0.8) else -0.8#-(100/abs(P) if (abs(P) > 2) else 50)*0.01#1/(1 if how_straight > 1 else how_straight)     P*kP + 
+                message.angular.z = P*kP #+ I*kI
                 self.publisher.publish(message)
 
 def main(args=None):
