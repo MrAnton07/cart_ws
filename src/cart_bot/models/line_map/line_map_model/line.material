@@ -6,7 +6,7 @@ material LineMaterial
         {
             texture_unit
             {
-                texture line_map_f.png
+                texture materials/textures/line_map_f.png
             }
         }
     }
