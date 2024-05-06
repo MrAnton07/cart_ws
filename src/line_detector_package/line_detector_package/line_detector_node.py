@@ -96,6 +96,9 @@ class ImageSubscriber(Node):
         on_color_msg.data = ','.join(self.on_color)
         if on_color_msg.data:
             self.publisher_color_under_bot.publish(on_color_msg)
+        else:
+            on_color_msg.data = ""
+            self.publisher_color_under_bot.publish(on_color_msg)
         print(self.on_color)
 
 
@@ -110,6 +113,7 @@ class ImageSubscriber(Node):
             self.publisher_red.publish(self.has_red)
             self.has_red.data = False
             return
+        self.publisher_red.publish(self.has_red)
 
         mask = cv2.bitwise_or(mask_dict[self.key[0]], mask_dict[self.key[1]])
         
