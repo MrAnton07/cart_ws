@@ -7,4 +7,6 @@
 
     <xacro:include filename="camera.xacro" />
 
+    <xacro:include filename="camera_on_rod.xacro" />
+
 </robot>

@@ -92,14 +92,17 @@ class ImageSubscriber(Node):
 
         mask_dict = dict(blue = mask_blue, black = mask_black, green = mask_green, pink = mask_pink, orange = mask_orange)
 
-        self.on_color = [mask_name for mask_name in self.key if np.any(mask_dict[mask_name])] #Проверяем, какие цвета сейчас под нами
+        try:
+            self.on_color = [mask_name for mask_name in self.key if np.any(mask_dict[mask_name])] #Проверяем, какие цвета сейчас под нами
+        except:
+            pass
         on_color_msg.data = ','.join(self.on_color)
         if on_color_msg.data:
             self.publisher_color_under_bot.publish(on_color_msg)
         else:
             on_color_msg.data = ""
             self.publisher_color_under_bot.publish(on_color_msg)
-        print(self.on_color)
+        #print(self.on_color)
 
 
         # Шаг 4: Проверка наличия пурпурного цвета
@@ -116,19 +119,34 @@ class ImageSubscriber(Node):
         self.publisher_red.publish(self.has_red)
 
         mask = cv2.bitwise_or(mask_dict[self.key[0]], mask_dict[self.key[1]])
+
+        len_ = int((len(mask[:, 0])-1)/2)
+        top_pixels = mask[0:len_, :]
+        bottom_pixels = mask[len_:-1, :]
+        top_line_mean = np.where(top_pixels == 255)[-1]
+        bottom_line_mean = np.where(bottom_pixels == 255)[-1]
+        x_top_mean = int((0.0 if top_line_mean.size==0 else np.mean(top_line_mean)))
+        x_bottom_mean = int((0.0 if bottom_line_mean.size==0 else np.mean(bottom_line_mean)))
+        
+        tgA = abs(x_top_mean-x_bottom_mean)/(len_*2)
+        angle = np.degrees(np.arctan(tgA))
+        if x_top_mean > x_bottom_mean: angle = -angle
+        #self.line = [(x_bottom_mean, 479), (x_top_mean, 0)]
+
         
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         cv2.drawContours(cv_image, contours, -1, (0, 255, 0), 1)
 
         y, x = np.where(mask == 255)
-        print(x)
+        #self.get_logger().info(f'First String1 Is {angle}')
+        #self.get_logger().info(f'First String2 Is {x_bottom_mean}')
         x_mean = (0.0 if x.size==0 else np.mean(x)) #Средняя координата линии по x
-        print(x_mean)
-        print(self.theta)
+        #print(x_mean)
+        #print(self.theta)
         coords = np.column_stack((x, y))
         current_time = self.get_clock().now()
         eps = current_time - self.last_time
-        message.data = [x_mean, self.theta]
+        message.data = [x_mean, self.theta, angle] #################################################
         if eps.nanoseconds > 1e9:  #Использование алгоритма RANSAC для аппроксимации найденной маски в линию
             self.last_time = current_time
             try:
@@ -142,9 +160,9 @@ class ImageSubscriber(Node):
                 y_min = int(line_y[inliers][x[inliers].argmin()])
                 y_max = int(line_y[inliers][x[inliers].argmax()])
                 # print(slope_angle(x_min, y_min, x_max, y_max))
-                self.line = [(x_min, y_min), (x_max, y_max)]
+                #self.line = [(x_min, y_min), (x_max, y_max)]
                 self.theta = slope_angle(x_min, y_min, x_max, y_max)
-                message.data = [x_mean, self.theta]      
+                message.data = [x_mean, self.theta, angle]      
                 self.publisher.publish(message)
                 # Рисуем линию на изображении
                 

@@ -43,7 +43,7 @@ class StateMachine(Node):
             self.get_color,
             10)
         
-        
+        self.angle = 0
         self.rotation_speed = 0.7
         self.last_time = self.get_clock().now()
         self.I = 0.0
@@ -85,7 +85,7 @@ class StateMachine(Node):
         color = self.color_under_bot
         while(not ("" in color)):
             message.linear.x = 0.0
-            message.angular.z = 0.7
+            message.angular.z = 0.5
             self.publisher.publish(message)
             color = self.color_under_bot
             print(self.color_under_bot)
@@ -93,7 +93,7 @@ class StateMachine(Node):
         print("2 While")
         while("" in self.color_under_bot):
             message.linear.x = 0.0
-            message.angular.z = 0.7
+            message.angular.z = 0.5
             self.publisher.publish(message)
             color = self.color_under_bot # Убрать
             eventlet.sleep(0.1)
@@ -101,34 +101,48 @@ class StateMachine(Node):
         self.flag = False
         self.in_progress = False
 
-    def back_until_pink(self):
-        while(self.in_progress == True):
-            eventlet.sleep(0.1)
-            pass
-        self.get_logger().info(f'BUP')
-        self.in_progress = True
-        message = Twist()
-        self.task = "ON_BASE"
-        while(not self.has_pink):
-            message.linear.x = 0.10
-            message.angular.z = self.how_straight*0.001
-            self.publisher.publish(message)
-            eventlet.sleep(0.1)
-        while(self.has_pink):
-            message.linear.x = -0.15
-            message.angular.z = self.how_straight*0.001
-            self.publisher.publish(message)
-            eventlet.sleep(0.1)
-        message.linear.x = -0.01
-        message.angular.z = self.how_straight*0.001
-        self.publisher.publish(message)
-        eventlet.sleep(0.4)
-        # while(self.how_straight > 5):
-        #     message.linear.x = 0.0
-        #     message.angular.z = self.how_straight*0.005
-        #     self.publisher.publish(message)
-        #     eventlet.sleep(0.1)
-        self.in_progress = False
+    # def back_until_pink(self):
+    #     while(self.in_progress == True):
+    #         eventlet.sleep(0.1)
+    #         pass
+    #     self.get_logger().info(f'BUP')
+    #     self.in_progress = True
+    #     message = Twist()
+    #     self.task = "ON_BASE"
+    #     v_wheel = 0.05
+    #     chasis_width = 0.15
+    #     # while(not self.has_pink):
+    #     #     if(self.how_straight < 0):
+    #     #         v_wheel = -v_wheel
+    #     #     message.linear.x = (abs(v_wheel))/2
+    #     #     message.angular.z = v_wheel/chasis_width
+    #     #     self.publisher.publish(message)
+    #     #     eventlet.sleep(0.05)
+    #     while(not self.has_pink):
+    #         if(abs(self.angle) > 7.0):
+    #             while(abs(self.angle) > 3.0):
+    #                 message.linear.x = -(0.03 + abs(self.how_straight*0.0005))
+    #                 message.angular.z = self.angle*0.04 + self.how_straight*0.003
+    #                 self.publisher.publish(message)
+    #                 eventlet.sleep(0.1)
+    #         if(abs(self.how_straight) > 60):
+    #             while(abs(self.how_straight) > 15.0):
+    #                 message.linear.x = 0.0
+    #                 message.angular.z = self.how_straight*0.001
+    #                 self.publisher.publish(message)
+    #                 eventlet.sleep(0.1)
+    #         message.linear.x = 0.10
+    #         message.angular.z = self.angle*0.05 - self.how_straight*0.005
+    #         self.publisher.publish(message)
+    #         eventlet.sleep(0.1)
+    #     while(self.has_pink):
+    #         message.linear.x = -0.15
+    #         message.angular.z = self.angle*0.01 + self.how_straight*0.001
+    #         self.publisher.publish(message)
+    #         eventlet.sleep(0.1)
+    #     eventlet.sleep(0.15)
+    #     self.flag = False
+    #     self.in_progress = False
         
 
 
@@ -136,32 +150,53 @@ class StateMachine(Node):
         message = Twist()
         self.has_pink = msg.data
         if msg.data == True and self.flag == False:
+            rotating_thread = threading.Thread(target=self.rotate_until_color)
+            self.get_logger().info(f'{self.task}')
             if self.task == "A":
                 self.flag = True
-
-                rotating_thread = threading.Thread(target=self.rotate_until_color)
+                self.get_logger().info(f'"THE A"')
                 rotating_thread.start()
                 
                 if "black" in self.color_under_bot:
                     eventlet.sleep(0.1)
-                    getting_back = threading.Thread(target=self.back_until_pink)
-                    getting_back.start()
+                    self.task = "ON_BASE"
+                    # getting_back = threading.Thread(target=self.back_until_pink)
+                    # getting_back.start()
 
-            if self.task == "D":
+            elif self.task == "D":
                 self.flag = True
+                self.get_logger().info(f'"THE D"')
                 message.linear.x = 0.0
                 message.angular.z = 0.0
                 self.publisher.publish(message)
                 eventlet.sleep(3)
-                
-                rotating_thread = threading.Thread(target=self.rotate_until_color)
                 rotating_thread.start()
+
+            elif self.task == "B":
+                self.flag = True
+                self.get_logger().info(f'"THE B"')
+                message.linear.x = 0.0
+                message.angular.z = 0.0
+                self.publisher.publish(message)
+                eventlet.sleep(3)
+                rotating_thread.start()
+
+            if self.task == "C":
+                self.flag = True
+                self.get_logger().info(f'"THE C"')
+                message.linear.x = 0.0
+                message.angular.z = 0.0
+                self.publisher.publish(message)
+                eventlet.sleep(3)
+                rotating_thread.start()
+
 
             if self.task == "ON_BASE":
                 pass
 
     def black_line_callback(self, msg):
         self.how_straight = (320-msg.data[0])
+        self.angle = msg.data[-1]
         message = Twist()
         if self.flag or self.task == "ON_BASE":
             pass
